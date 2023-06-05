@@ -1,0 +1,10 @@
+/dataset
+*.idea*
+.vscode
+/figures
+/trained_models
+/results
+/checkpoint
+*__pycache__*
+/logs
+.vscode/
