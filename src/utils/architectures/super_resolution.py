@@ -1,12 +1,12 @@
 """
     author: SPDKH
 """
-from tensorflow.keras.layers import Dense, Flatten, Input, add, multiply
+from tensorflow.keras.layers import add, multiply
+from tensorflow.keras.layers import GlobalAveragePooling3D
 from tensorflow.keras.layers import Conv3D, UpSampling3D, LeakyReLU, Lambda, ReLU
-from utils.common import global_average_pooling3d, conv_block3d
 
 
-def srcnn(net_input, scale=2, filters=[9, 5, 5], coeffs=[128, 64]):
+def srcnn(net_input, scale=2, filters=(9, 5, 5), coeffs=(128, 64)):
     """
     source: https://arxiv.org/pdf/1501.00092.pdf
     important: deeper is not better here
@@ -35,8 +35,8 @@ def srcnn(net_input, scale=2, filters=[9, 5, 5], coeffs=[128, 64]):
     # x = layers.Conv2DTranspose(1, 5, activation="relu", padding="same")(x)
 
     conv = net_input
-    for i, ni in enumerate(coeffs):
-        conv = Conv3D(ni,
+    for i, n_i in enumerate(coeffs):
+        conv = Conv3D(n_i,
                       kernel_size=filters[i],
                       padding='same')(conv)
         conv = ReLU()(conv)
@@ -49,7 +49,10 @@ def srcnn(net_input, scale=2, filters=[9, 5, 5], coeffs=[128, 64]):
 
 
 def ca_layer(net_input, channel, reduction=16):
-    conv = Lambda(global_average_pooling3d)(net_input)
+    """
+        Channel Attention Layer used in RCAN super-resolution
+    """
+    conv = Lambda(GlobalAveragePooling3D)(net_input)
     conv = Conv3D(channel // reduction,
                   kernel_size=1,
                   activation='relu',
@@ -63,6 +66,9 @@ def ca_layer(net_input, channel, reduction=16):
 
 
 def rcab(net_input, channel):
+    """
+        Residucal Channel Attention Block used in RCAN super-resolution
+    """
     conv = net_input
     for _ in range(2):
         conv = Conv3D(channel, kernel_size=3, padding='same')(conv)
@@ -72,20 +78,26 @@ def rcab(net_input, channel):
     return output
 
 
-def res_group(net_input, channel, n_RCAB):
+def res_group(net_input, channel, n_rcab):
+    """
+        residual group used in RCAN super-resolution
+    """
     conv = net_input
-    for _ in range(n_RCAB):
+    for _ in range(n_rcab):
         conv = rcab(conv, channel)
     return conv
 
 
 def rcan(net_input, scale=2, channel=64, n_res_group=3, n_rcab=5):
+    """
+        RCAN super-resolution arch
+    """
     conv = Conv3D(channel, kernel_size=3, padding='same')(net_input)
     for _ in range(n_res_group):
-        conv = res_group(conv, channel=channel, n_RCAB=n_rcab)
+        conv = res_group(conv, channel=channel, n_rcab=n_rcab)
 
-    up = UpSampling3D(size=(scale, scale, 1))(conv)
-    conv = Conv3D(channel, kernel_size=3, padding='same')(up)
+    up_sample = UpSampling3D(size=(scale, scale, 1))(conv)
+    conv = Conv3D(channel, kernel_size=3, padding='same')(up_sample)
     conv = LeakyReLU(alpha=0.2)(conv)
     conv = Conv3D(1, kernel_size=3, padding='same')(conv)
     output = LeakyReLU(alpha=0.2)(conv)

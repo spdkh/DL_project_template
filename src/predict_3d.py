@@ -8,15 +8,15 @@ from tensorflow.keras.layers import Dense, Flatten, Input, add, multiply
 
 import imageio
 import os
-from models import *
-from utils.fcns import prctile_norm
+from src.models import *
+from src.utils.norm_helper import prctile_norm
 import tifffile as tiff
-from data.data import Data
+from src.data import Data
 
-from models.super_resolution import rcan
+from src.models import rcan
 
 
-from utils.config import parse_args
+from src.utils.config import parse_args
 
 """
     author: SPDKH

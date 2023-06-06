@@ -11,7 +11,7 @@ from skimage.metrics import mean_squared_error as compare_mse, \
 from numpy import asarray as ar, exp
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
-from utils.read_mrc import read_mrc
+from src.utils.physics_informed.read_mrc import read_mrc
 import tifffile as tiff
 
 

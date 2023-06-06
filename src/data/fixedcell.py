@@ -3,8 +3,8 @@
 """
 import datetime
 import os
-from data.data import Data
-from utils import fcns
+from src.data.data import Data
+from src.utils import ml_helper
 
 
 class FixedCell(Data):
@@ -44,6 +44,6 @@ class FixedCell(Data):
                                  self.data_types[data_type])
         print(self.data_dirs)
 
-        self.otf_path = './OTF/fixed_cell_otf.tif'
+        self.otf_path = './OTF/fixedcell_otf.tif'
         self.psf = self.init_psf()
 

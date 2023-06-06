@@ -14,9 +14,9 @@
 
 import os
 
-from data.data import Data
-from data.fixed_cell import FixedCell
-from utils import fcns
+from src.data.data import Data
+from src.data.fixedcell import FixedCell
+from src.utils import ml_helper
 
 
 class FairSIM(FixedCell):

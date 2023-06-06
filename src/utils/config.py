@@ -4,10 +4,9 @@
     parsing and configuration
 """
 import argparse
-import random
 import numpy as np
 
-from utils.fcns import check_folder
+from src.utils.path_helper import check_folder
 
 
 def check_args(args):
@@ -17,8 +16,8 @@ def check_args(args):
     # --checkpoint_dir
     check_folder(args.checkpoint_dir)
 
-    # --epoch
-    assert args.epoch >= 1, 'number of epochs must be larger than or equal to one'
+    # --iteration
+    assert args.iteration >= 1, 'number of iterations must be larger than or equal to one'
 
     # --batch_size
     assert args.batch_size >= 1, 'batch size must be larger than or equal to one'
@@ -37,21 +36,23 @@ def parse_args():
     parser = argparse.ArgumentParser(description=desc)
 
     parser.add_argument("--data_dir", type=str,
-                        # default="D:\\Data\\FixedCell\\PFA_eGFP\\cropped2d_128",
-                        default="D:\\Data\\FairSIM\\cropped3d_128_3",
+                        # default="D:/Data/FixedCell/PFA_eGFP/cropped2d_128",
+                        default="D:/Data/FairSIM/cropped3d_128_3",
                         help='The directory of the data')
     parser.add_argument('--dataset', type=str, default='FairSIM',
                         help='FixedCell or FairSIM')
-    parser.add_argument('--dnn_type', type=str, default='RCAN',
-                        choices=['CAGAN',
-                                 'SRGAN',
-                                 'UCAGAN',
-                                 'CGAN',
-                                 'SRGAN',
-                                 'UGAN',
-                                 'RCAN',
-                                 'URCAN'],
-                        help='The type of GAN')
+    parser.add_argument('--task', type=str, default='super_resolution',
+                        choices=['super_resolution'],
+                        help='What kind of task are you trying to solve?')
+    parser.add_argument('--dnn_type', type=str, default='cagan',
+                        choices=['cagan',
+                                 'srgan',
+                                 'ucagan',
+                                 'cgan',
+                                 'srgan',
+                                 'ugan',
+                                 'urcan'],
+                        help='The type of DNN')
 
     parser.add_argument("--load_weights", type=int, default=0,
                         choices=range(2))
@@ -80,8 +81,8 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=2,
                         choices=range(2, 16),
                         help='The size of batch')
-    parser.add_argument('--epoch', type=int,
-                        default=default_iterations, help='The number of epochs to run')
+    parser.add_argument('--iteration', type=int,
+                        default=default_iterations, help='The number of iterations to run')
     parser.add_argument("--sample_interval",
                         type=int, default=int(1 + 10 * (np.log10(1 + default_iterations // 50))))
     parser.add_argument("--validate_interval", type=int, default=5)
@@ -102,20 +103,23 @@ def parse_args():
                         help='Directory name to save training logs')
 
     parser.add_argument("--n_ResGroup", type=int, default=2)
-    parser.add_argument("--n_RCAB", type=int, default=3)
+    parser.add_argument("--n_rcab", type=int, default=3)
     parser.add_argument("--n_channel", type=int, default=64)
 
     parser.add_argument("--n_phases", type=int, default=5)
     parser.add_argument("--n_angles", type=int, default=3)
 
-    """
-                                    Predict
-    """
-    parser.add_argument("--test_dir", type=str, default="D:\\Data\\FairSIM\cropped2d_128\\validation\\raw_data\\OMX_U2OS_Tubulin_525nm_000.tif")
+    #               Predict
+
+    parser.add_argument("--test_dir",
+                        type=str,
+                        default=""" D:/Data/FairSIM/cropped2d_128/validation/raw_data/
+                                         OMX_U2OS_Tubulin_525nm_000.tif""")
     parser.add_argument("--folder_test", type=str, default="fairsim")
     parser.add_argument("--gpu_id", type=str, default="0")
     parser.add_argument("--gpu_memory_fraction", type=float, default=0.25)
     parser.add_argument("--model_weights", type=str,
-                        default="D:\\OneDrive - The University of Memphis\\Parisa_Daj\\Codes\\caGAN_git\\trained_models\\2d\\SIM_cropped_0.05\\weights_disc_best.h5")
+                        default="""D:/OneDrive - The University of Memphis/Parisa_Daj/Codes/
+                        caGAN_git/trained_models/2d/SIM_cropped_0.05/weights_disc_best.h5""")
 
     return check_args(parser.parse_args())

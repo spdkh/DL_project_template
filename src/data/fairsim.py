@@ -6,9 +6,9 @@ import os
 import numpy as np
 from scipy.io import loadmat
 
-from data.data import Data
-from utils import fcns
-from utils.psf_generator import Parameters3D, cal_psf_3d, psf_estimator_3d
+from src.data.data import Data
+from src.utils import ml_helper
+from src.utils.physics_informed.psf_generator import Parameters3D, cal_psf_3d, psf_estimator_3d
 
 
 class FairSIM(Data):
