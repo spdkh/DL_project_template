@@ -4,6 +4,8 @@
     parsing and configuration
 """
 import argparse
+
+import pathlib
 import numpy as np
 
 from src.utils.path_helper import check_folder
@@ -14,7 +16,7 @@ def check_args(args):
     checking arguments
     """
     # --checkpoint_dir
-    check_folder(args.checkpoint_dir)
+    check_folder(args.data_dir)
 
     # --iteration
     assert args.iteration >= 1, 'number of iterations must be larger than or equal to one'
@@ -94,13 +96,8 @@ def parse_args():
                                 'prctile'])
     parser.add_argument("--seed", type=int, default=12345)
 
-
-    parser.add_argument('--checkpoint_dir', type=str, default='checkpoint',
-                        help='Directory name to save the checkpoints')
     parser.add_argument('--result_dir', type=str, default='results',
                         help='Directory name to save the generated images')
-    parser.add_argument('--log_dir', type=str, default='logs',
-                        help='Directory name to save training logs')
 
     parser.add_argument("--n_ResGroup", type=int, default=2)
     parser.add_argument("--n_rcab", type=int, default=3)
@@ -111,15 +108,11 @@ def parse_args():
 
     #               Predict
 
-    parser.add_argument("--test_dir",
-                        type=str,
-                        default=""" D:/Data/FairSIM/cropped2d_128/validation/raw_data/
-                                         OMX_U2OS_Tubulin_525nm_000.tif""")
-    parser.add_argument("--folder_test", type=str, default="fairsim")
     parser.add_argument("--gpu_id", type=str, default="0")
     parser.add_argument("--gpu_memory_fraction", type=float, default=0.25)
     parser.add_argument("--model_weights", type=str,
-                        default="""D:/OneDrive - The University of Memphis/Parisa_Daj/Codes/
-                        caGAN_git/trained_models/2d/SIM_cropped_0.05/weights_disc_best.h5""")
+    default=pathlib.Path(
+            """D:/OneDrive - The University of Memphis/Parisa_Daj/Codes/
+            caGAN_git/trained_models/2d/SIM_cropped_0.05/weights_disc_best.h5"""))
 
     return check_args(parser.parse_args())

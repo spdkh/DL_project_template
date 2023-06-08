@@ -3,12 +3,17 @@
     todo: complete
 """
 from __future__ import division
+import sys
 import os
 from abc import ABC, abstractmethod
+import datetime
 
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input
 
+from src.utils import const
 
 class DNN(ABC):
     """
@@ -19,13 +24,11 @@ class DNN(ABC):
         """
             args: argparse object
         """
-        self.batch_id = 0
-        self.model = Model()
-        self.args = args
-        # self.data = Data(self.args)
-        self.optimizer = self.args.opt
+        self.batch_id = {'train': 0, 'val': 0, 'test': 0}
 
-        print('Init', self.args.dnn_type)
+        self.args = args
+
+        print('Init DNN Arch:', self.args.dnn_type)
 
         module_name = '.'.join(['data',
                                 args.dataset.lower()])
@@ -37,7 +40,16 @@ class DNN(ABC):
         self.scale_factor = int(self.data.output_dim[0]
                                 / self.data.input_dim[0])
 
-        self.writer = tf.summary.create_file_writer(self.data.log_path)
+        self.model_input = Input(self.data.input_dim)
+        self.model_output = None
+        self.model = None
+        self.optimizer = self.args.opt
+        self.lr_controller = None
+        self.loss_record = []
+
+        self.loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+
+        self.writer = tf.summary.create_file_writer(str(const.LOG_DIR))
 
         super().__init__()
 
@@ -53,6 +65,48 @@ class DNN(ABC):
             self.batch_id[mode] += 1
         return self.batch_id[mode]
 
+    def train(self):
+        """
+            iterate over epochs
+        """
+        start_time = datetime.datetime.now()
+        self.lr_controller.on_train_begin()
+        train_names = ['Generator_loss', 'Discriminator_loss']
+
+        print('Training...')
+
+        for iteration in range(self.args.iteration):
+            elapsed_time = datetime.datetime.now() - start_time
+
+            loss_generator, loss_discriminator = self.train_epoch()
+
+            tf.print("%d epoch: time: %s, g_loss = %s, d_loss= " % (
+                iteration + 1,
+                elapsed_time,
+                loss_generator),
+                     loss_discriminator, output_stream=sys.stdout)
+
+            if (iteration) % self.args.validate_interval == 0:
+                self.validate(iteration, sample=0)
+                self.write_log(self.writer,
+                               train_names[0],
+                               np.mean(self.loss_record),
+                               iteration)
+                self.write_log(self.writer,
+                               train_names[1],
+                               np.mean(self.d_loss_record),
+                               iteration)
+                self.d_loss_record = []
+                self.g_loss_record = []
+
+
+    @abstractmethod
+    def train_epoch(self):
+        """
+            Training process per epoch
+            loop over all data samples / number of batches
+            train per batch to complete an epoch
+        """
     @abstractmethod
     def build_model(self):
         """
@@ -65,15 +119,9 @@ class DNN(ABC):
         """
 
     @abstractmethod
-    def epoch(self):
+    def train_epoch(self):
         """
             iterate over batches
-        """
-
-    @abstractmethod
-    def train(self):
-        """
-            iterate over epochs
         """
 
     @abstractmethod
@@ -81,3 +129,22 @@ class DNN(ABC):
         """
             validate and write logs
         """
+
+    def write_log(self, writer, names, logs, batch_no=0, mode='float'):
+        """
+        todo: test
+        Parameters
+        ----------
+        names
+        logs
+        batch_no
+        """
+        with writer.as_default():
+            if mode == 'float':
+                tf.summary.scalar(names, logs, step=batch_no)
+            else:
+                tf.summary.text(names,
+                                tf.convert_to_tensor(str(logs),
+                                                     dtype=tf.string),
+                                step=batch_no)
+            writer.flush()

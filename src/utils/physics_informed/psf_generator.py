@@ -46,19 +46,6 @@ class Parameters3D:
         self.norders = int((self.nphases + 1) / 2)
 
 
-def prctile_norm(x, min_prc=0, max_prc=100):
-    """
-    :param x:
-    :param min_prc:
-    :param max_prc:
-    :return:
-    """
-    y = (x-np.percentile(x, min_prc))/(np.percentile(x, max_prc)-np.percentile(x, min_prc)+1e-7)
-    y[y > 1] = 1
-    y[y < 0] = 0
-    return y
-
-
 def cal_psf_3d(raw_psf, dim):
     """
     :param otf_path:

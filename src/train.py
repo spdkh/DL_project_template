@@ -54,7 +54,6 @@ def main():
     #
     # # visualize learned generator
     # dnn.visualize_results(args.iteration-1)
-    # print(" [*] Validation finished!")
 
 
 if __name__ == '__main__':

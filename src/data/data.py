@@ -1,3 +1,8 @@
+"""
+    author: SPDKH
+
+    Data Manager
+"""
 from abc import ABC, abstractmethod
 import os
 import datetime
@@ -9,46 +14,65 @@ from skimage.measure import block_reduce
 
 from src.utils.physics_informed.psf_generator import Parameters3D, cal_psf_3d, psf_estimator_3d
 
-from src.utils.norm_helper import prctile_norm, max_norm, min_max_norm
-from src.utils.img_helper import reorder
+from src.utils import const
+from src.utils import norm_helper
 from src.utils.path_helper import check_folder
 
 
 class Data(ABC):
+    """
+        Abstract Data Manager Class
+    """
+
     def __init__(self, args):
         self.args = args
         super().__init__()
 
-        norms = {'prctile': prctile_norm,
-                 'max': max_norm,
-                 'min_max': min_max_norm}
-        self.norm = norms[self.args.norm]
+        self.data_groups = {'train': 'training',
+                            'test': 'testing',
+                            'val': 'validation'}
 
-        data_name = self.args.dataset
+        self.data_types = {'x': 'rawdata', 'y': 'gt'}
 
-        chkpnt_folder_name = '_'.join([data_name,
-                                       self.args.dnn_type,
-                                       datetime.datetime.now().strftime("%d-%m-%Y_time%H%M")])
-
-        self.save_weights_path = os.path.join(self.args.checkpoint_dir,
-                                              chkpnt_folder_name)
-
-        print(self.save_weights_path)
-        check_folder(self.save_weights_path)
-
-        self.sample_path = os.path.join(self.save_weights_path,
-                                        'sampled_img')
-
-        self.log_path = os.path.join(self.args.checkpoint_dir,
-                                     'graph',
-                                     chkpnt_folder_name)
-        self.data_dirs = dict()
+        self.norm = getattr(norm_helper, self.args.norm + '_norm')
+        self.data_dirs = {}
         self.otf_path = None
-        #     check_folder(self.log_path)
 
-        self.input_dim = self.load_sample(self.args.test_dir)
-        print('input', self.input_dim)
-        self.output_dim = [self.input_dim[0]*2, self.input_dim[1]*2, self.input_dim[2], 1]
+        self.input_dim = None
+        self.output_dim = None
+
+    def config(self):
+        """
+            Initial configuration to call in the children classes
+        """
+        # Load Input Sample
+        input_dir = const.DATA_DIR \
+                    / self.data_groups['train'] \
+                    / self.data_types['x']
+
+        in_sample_dir = \
+            input_dir / os.listdir(input_dir)[0]
+        self.input_dim = self.load_sample(in_sample_dir)
+        print('Input Image shape:', self.input_dim)
+
+        # Load Output Sample
+        output_dir = const.DATA_DIR \
+                     / self.data_groups['train'] \
+                     / self.data_types['y']
+        out_sample_dir = \
+            output_dir / os.listdir(output_dir)[0]
+
+        self.output_dim = self.load_sample(out_sample_dir)
+        print('Output Image shape:', self.output_dim)
+
+        for data_group, data_dir in self.data_groups.items():
+            self.data_dirs[data_group] = \
+                const.DATA_DIR / data_dir
+            for data_type, values in self.data_types.items():
+                self.data_dirs[data_type + data_group] = \
+                    self.data_dirs[data_group] / values
+
+        print(self.data_dirs)
 
     def load_sample(self, path, show=0):
         """
@@ -69,49 +93,81 @@ class Data(ABC):
 
         return img_size
 
-    def data_loader(self,
-                    mode, it,
-                    batch_size,
-                    scale,
-                    wf_weight=0):
+    def calc_wf(self, image_batch):
         """
+            Convert SIM images to wf images
+        """
+        wf_batch = []
+        for cur_img in image_batch:
+            nchannels = cur_img.shape[-1]
 
+            # WideField is the sum of angles and phases in each z patch
+            cur_wf = block_reduce(cur_img,
+                                  block_size=(1, 1, 1, nchannels),
+                                  func=np.sum,
+                                  cval=np.sum(cur_img))
+            cur_wf = self.norm(np.array(cur_wf))
+            wf_batch.append(cur_wf)
+
+        wf_batch = np.array(wf_batch)
+        wf_batch = wf_batch.reshape((wf_batch.shape[0],
+                                     self.input_dim[2],
+                                     self.input_dim[1],
+                                     self.input_dim[0],
+                                     1),
+                                    order='F').transpose((0, 2, 3, 1, 4))
+        return wf_batch
+
+    def image2image_batch_load(self,
+                               batch_size: int,
+                               iteration: int = 0,
+                               scale: int = 1,
+                               mode: str = 'train'):
+        """
         Parameters
         ----------
         mode: str
             options: "train" or "test" or "val"
-        batch_size
-        wf_weight
+        iteration: int
+            batch iteration id to load the right batch
+            pass batch_iterator(.) directly if loading batches
+            this updates the batch id,
+            then passes the updated value
+            can leave 0 if
+        batch_size: int
+            if not loading batches,
+            keep it the same as number of all samples loading
+        scale: int = 1
+            image to image translation scale factor
+            ratio of gt size vs raw data size for super-resolution
+            leave 1 if not doing super-resolution
 
-        Returns
+        Returns: tuple
+            loaded batch of raw images,
+            loaded batch of ground truth
         -------
-
-        todo: plot wf and make sure it is fine
-        todo: change percentile norm condition to norm given by user
         """
+        batch_images_path = os.listdir(self.data_dirs['x' + mode])
+        gt_images_path = os.listdir(self.data_dirs['y' + mode])
 
-        images_names = os.listdir(self.data_dirs['x' + mode])
-        gt_names = os.listdir(self.data_dirs['y' + mode])
-
-        images_names.sort()
-        gt_names.sort()
+        batch_images_path.sort()
+        gt_images_path.sort()
         x_path = self.data_dirs['x' + mode]
         y_path = self.data_dirs['y' + mode]
 
-        it = it * batch_size
-        batch_images_path = images_names[it:batch_size + it]
-        gt_images_path = gt_names[it:batch_size + it]
+        iteration = iteration * batch_size
+        batch_images_path = batch_images_path[iteration:batch_size + iteration]
+        gt_images_path = gt_images_path[iteration:batch_size + iteration]
 
         image_batch = []
         gt_batch = []
-        wf_batch = []
-        for i in range(len(batch_images_path)):
-            cur_img = tiff.imread(os.path.join(x_path,
-                                               batch_images_path[i]))
+        for i, _ in enumerate(batch_images_path):
+            cur_img = tiff.imread(x_path /
+                                  batch_images_path[i])
             cur_img[cur_img < 0] = 0
 
-            cur_gt = tiff.imread(os.path.join(y_path,
-                                              gt_images_path[i]))
+            cur_gt = tiff.imread(y_path
+                                 / gt_images_path[i])
             cur_gt[cur_gt < 0] = 0
 
             cur_img = self.norm(np.array(cur_img))
@@ -122,10 +178,9 @@ class Data(ABC):
         image_batch = np.array(image_batch)
         gt_batch = np.array(gt_batch)
 
-        nslice = image_batch.shape[1]
         image_batch = np.reshape(image_batch,
                                  (batch_size,
-                                  nslice // self.input_dim[2],
+                                  image_batch.shape[1] // self.input_dim[2],
                                   self.input_dim[2],
                                   self.input_dim[1],
                                   self.input_dim[0]),
@@ -138,36 +193,20 @@ class Data(ABC):
                                      1),
                                     order='F').transpose((0, 2, 3, 1, 4))
 
-        if wf_weight > 0:
-            for cur_img in image_batch:
-                nchannels = cur_img.shape[-1]
-
-                # WideField is the sum of angles and phases in each z patch
-                cur_wf = block_reduce(cur_img,
-                                      block_size=(1, 1, 1, nchannels),
-                                      func=np.sum,
-                                      cval=np.sum(cur_img))
-                cur_wf = self.norm(np.array(cur_wf))
-                wf_batch.append(cur_wf)
-
-            wf_batch = np.array(wf_batch)
-            wf_batch = wf_batch.reshape((batch_size,
-                                         self.input_dim[2],
-                                         self.input_dim[1],
-                                         self.input_dim[0],
-                                         1),
-                                        order='F').transpose((0, 2, 3, 1, 4))
-
-        return image_batch, gt_batch, wf_batch
+        return image_batch, gt_batch
 
     @abstractmethod
     def load_psf(self):
+        """
+            Load PSF
+        """
         pass
 
     def init_psf(self):
-        # --------------------------------------------------------------------------------
-        #                             Read OTF and PSF
-        # --------------------------------------------------------------------------------
+        """
+            Read OTF and PSF
+        """
+
         raw_psf = self.load_psf()
         # 128*128*11 otf and psf numpy array
         psf, _ = cal_psf_3d(raw_psf,
@@ -176,11 +215,10 @@ class Data(ABC):
         print('PSF size before:', np.shape(psf))
         # return psf
         # sigma_y, sigma_x, sigma_z = psf_estimator_3d(psf)  # Find the most effective region of OTF
-        ksize = self.output_dim[0] // 2 #int(sigma_y * 4)
+        ksize = self.output_dim[0] // 2  # int(sigma_y * 4)
         halfy = np.shape(psf)[0] // 2
         print(ksize, halfy)
         psf = psf[halfy - ksize:halfy + ksize, halfy - ksize:halfy + ksize, :]
         print('PSF size after:', np.shape(psf))
         return np.reshape(psf,
                           (ksize * 2, 2 * ksize, np.shape(psf)[2], 1)).astype(np.float32)
-

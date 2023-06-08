@@ -23,7 +23,7 @@ def discriminator(input_shape):
     in_2 = conv_block_3d(in_1, 128, 3)
     in_3 = conv_block_3d(in_2, 256, 3)
 
-    in_4 = Lambda(GlobalAveragePooling3D)(in_3)
+    in_4 = GlobalAveragePooling3D()(in_3)
 
     out_0 = Flatten(input_shape=(1, 1))(in_4)
     out_1 = Dense(128)(out_0)

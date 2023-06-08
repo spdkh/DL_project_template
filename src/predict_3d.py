@@ -46,7 +46,7 @@ def main():
     img_path.sort()
     n_channel = 15
 
-    print(img_path)
+    print('Loading sample image from:', img_path)
     img = tiff.imread(img_path[0])
     shape = img.shape
     input_y, input_x = shape[1], shape[2]
@@ -76,6 +76,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-

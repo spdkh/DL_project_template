@@ -17,12 +17,3 @@ def check_folder(log_dir):
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     return log_dir
-
-
-def fix_path(path):
-    """
-
-    :param path:
-    :return:
-    """
-    return path.replace('/', '\\')

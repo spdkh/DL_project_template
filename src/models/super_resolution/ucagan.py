@@ -72,10 +72,10 @@ class UCAGAN(CAGAN):
             # x = np.expand_dims(x, axis=-1)
             gamma /= 2
 
-        self.model_output['gen'] = sr_out
+        self.model_output = sr_out
 
-        gen = Model(inputs=self.model_input['gen'],
-                    outputs=self.model_output['gen'])
+        gen = Model(inputs=self.model_input,
+                    outputs=self.model_output)
         tf.keras.utils.plot_model(gen,
                                   to_file='Unrolled_generator.png',
                                   show_shapes=True,

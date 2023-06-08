@@ -1,6 +1,7 @@
 """
     author: SPDKH
 """
+import tensorflow as tf
 from tensorflow.keras.layers import add, multiply
 from tensorflow.keras.layers import GlobalAveragePooling3D
 from tensorflow.keras.layers import Conv3D, UpSampling3D, LeakyReLU, Lambda, ReLU
@@ -52,7 +53,7 @@ def ca_layer(net_input, channel, reduction=16):
     """
         Channel Attention Layer used in RCAN super-resolution
     """
-    conv = Lambda(GlobalAveragePooling3D)(net_input)
+    conv = Lambda(global_average_pooling3d)(net_input)
     conv = Conv3D(channel // reduction,
                   kernel_size=1,
                   activation='relu',
@@ -122,3 +123,7 @@ def conv_block(net_input, channel_size):
                       padding='same')(net_input)
         conv = LeakyReLU(alpha=0.1)(conv)
     return conv
+
+
+def global_average_pooling3d(layer_in):
+    return tf.reduce_mean(layer_in, axis=(1, 2, 3), keepdims=True)

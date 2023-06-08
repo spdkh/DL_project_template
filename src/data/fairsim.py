@@ -1,5 +1,17 @@
 """
-    author: SPDKH
+Copyright 2023 The Improved caGAN Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 """
 import os
 
@@ -7,47 +19,22 @@ import numpy as np
 from scipy.io import loadmat
 
 from src.data.data import Data
-from src.utils import ml_helper
+from src.utils import const
 from src.utils.physics_informed.psf_generator import Parameters3D, cal_psf_3d, psf_estimator_3d
 
 
 class FairSIM(Data):
+    """
+        Manage FairSIM data Class
+    """
     def __init__(self, args):
         Data.__init__(self, args)
-        self.data_groups = {'train': 'training',
-                            'test': 'testing',
-                            'val': 'validation'}
 
         self.data_types = {'x': 'raw_data', 'y': 'gt'}
-        self.args.data_dir = fcns.fix_path(self.args.data_dir)
-        input_dir = os.path.join(self.args.data_dir,
-                                 self.data_groups['train'],
-                                 self.data_types['x'])
-        output_dir = os.path.join(self.args.data_dir,
-                                  self.data_groups['train'],
-                                  self.data_types['y'])
-        in_sample_dir = os.path.join(input_dir,
-                                     os.listdir(input_dir)[0])
-        self.input_dim = self.load_sample(in_sample_dir)
-        print('input', self.input_dim)
-        out_sample_dir = os.path.join(output_dir,
-                                      os.listdir(output_dir)[0])
 
-        self.output_dim = self.load_sample(out_sample_dir)
-        print('output', self.output_dim)
-
-        for data_group in self.data_groups.keys():
-            self.data_dirs[data_group] = os.path.join(self.args.data_dir,
-                                                      self.data_groups[data_group])
-            for data_type in self.data_types.keys():
-                self.data_dirs[data_type + data_group] = \
-                    os.path.join(self.data_dirs[data_group],
-                                 self.data_types[data_type])
-
-        print(self.data_dirs)
+        self.config()
         self.otf_path = './OTF/splinePSF_128_128_11.mat'
-
-        self.psf = self.init_psf()
+        # self.psf = self.init_psf()
 
     def load_psf(self):
         raw_psf = loadmat(self.otf_path)
