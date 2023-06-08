@@ -2,7 +2,7 @@
     Discriminator Architectures
 """
 from tensorflow.keras.layers import Dense, Flatten
-from tensorflow.keras.layers import LeakyReLU, Lambda
+from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.layers import GlobalAveragePooling3D
 from src.utils.ml_helper import conv_block_3d
 

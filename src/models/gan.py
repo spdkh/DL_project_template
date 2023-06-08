@@ -4,7 +4,7 @@
     author: SPDKH
     date: 2023
 """
-
+import sys
 from abc import abstractmethod
 import datetime
 import glob
@@ -16,6 +16,7 @@ from tensorflow.keras.layers import Input
 
 from src.models.dnn import DNN
 from src.utils.img_helper import img_comp
+from src.utils import const
 
 
 class GAN(DNN):
@@ -48,7 +49,6 @@ class GAN(DNN):
         """
         start_time = datetime.datetime.now()
         self.lr_controller.on_train_begin()
-        train_names = ['Generator_loss', 'Discriminator_loss']
         batch_id = -1
         iteration = 0
         while batch_id != 0:
@@ -59,11 +59,12 @@ class GAN(DNN):
                 self.train_gan()
             elapsed_time = datetime.datetime.now() - start_time
 
-            tf.print("%d batch iteration: time: %s, g_loss = %s, d_loss= " % (
-                iteration + 1,
-                elapsed_time,
-                loss_generator),
-                     loss_discriminator, output_stream=sys.stdout)
+            if batch_log:
+                tf.print("%d batch iteration: time: %s, g_loss = %s, d_loss= " % (
+                    iteration + 1,
+                    elapsed_time,
+                    loss_generator),
+                         loss_discriminator, output_stream=sys.stdout)
 
             if (iteration) % self.args.sample_interval == 0:
                 self.validate(iteration, sample=1)
@@ -78,6 +79,7 @@ class GAN(DNN):
                 :param iteration: current iteration number
                 :param sample: sample id
                 :return:
+                todo: review
         """
         validate_nrmse = [np.Inf]
 
@@ -150,9 +152,11 @@ class GAN(DNN):
             validation_id = 0
             # figures equal to the number of z patches in columns
             for j in range(self.data.input_dim[2]):
-                output_results = {'WF Raw Input': self.data.calc_wf(imgs)[validation_id, :, :, j, 0],
-                                  'SR Output': self.data.norm(outputs[validation_id, :, :, j, 0]),
-                                  'Ground Truth': imgs_gt[validation_id, :, :, j, 0]}
+                output_results = {
+                    'WF Raw Input': self.data.calc_wf(imgs)[validation_id, :, :, j, 0],
+                    'SR Output': self.data.norm(outputs[validation_id, :, :, j, 0]),
+                    'Ground Truth': imgs_gt[validation_id, :, :, j, 0]
+                }
 
                 plt.title('Z = ' + str(j))
                 for i, (label, img) in enumerate(output_results.items()):
@@ -161,7 +165,7 @@ class GAN(DNN):
                     # third row: ground truth
                     plt.subplot(3,
                                 self.data.input_dim[2],
-                                j + self.data.input_dim[2]*i + 1)
+                                j + self.data.input_dim[2] * i + 1)
                     plt.ylabel(label)
                     plt.imshow(img, cmap=plt.get_cmap('hot'))
 

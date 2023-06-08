@@ -3,7 +3,6 @@
 """
 import tensorflow as tf
 from tensorflow.keras.layers import add, multiply
-from tensorflow.keras.layers import GlobalAveragePooling3D
 from tensorflow.keras.layers import Conv3D, UpSampling3D, LeakyReLU, Lambda, ReLU
 
 
@@ -126,4 +125,8 @@ def conv_block(net_input, channel_size):
 
 
 def global_average_pooling3d(layer_in):
+    """
+        Not sure how different this is than
+        built-in global average pooling
+    """
     return tf.reduce_mean(layer_in, axis=(1, 2, 3), keepdims=True)

@@ -19,11 +19,11 @@ CONFIG_DIR = SRC_DIR / 'config'
 OUT_DIR = Path(args.result_dir)
 DATA_DIR = Path(args.data_dir)
 
-chkpnt_folder_name = '_'.join([args.dataset,
-                               args.dnn_type,
-                               datetime.datetime.now().strftime("%d-%m-%Y_time%H%M")])
+CHK_FOLDER = '_'.join([args.dataset,
+                       args.dnn_type,
+                       datetime.datetime.now().strftime("%d-%m-%Y_time%H%M")])
 
-WEIGHTS_DIR = OUT_DIR / chkpnt_folder_name
+WEIGHTS_DIR = OUT_DIR / CHK_FOLDER
 check_folder(WEIGHTS_DIR)
 
 SAMPLE_DIR = WEIGHTS_DIR / 'sampled_img'

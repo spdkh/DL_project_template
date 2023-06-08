@@ -13,13 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import os
 
 import numpy as np
 from scipy.io import loadmat
 
 from src.data.data import Data
-from src.utils import const
 from src.utils.physics_informed.psf_generator import Parameters3D, cal_psf_3d, psf_estimator_3d
 
 

@@ -15,6 +15,7 @@ from tensorflow.keras.layers import Input
 
 from src.utils import const
 
+
 class DNN(ABC):
     """
         Abstract class for DNN architectures
@@ -27,7 +28,7 @@ class DNN(ABC):
         self.batch_id = {'train': 0, 'val': 0, 'test': 0}
 
         self.args = args
-
+        print(self.args)
         print('Init DNN Arch:', self.args.dnn_type)
 
         module_name = '.'.join(['data',
@@ -46,6 +47,7 @@ class DNN(ABC):
         self.optimizer = self.args.opt
         self.lr_controller = None
         self.loss_record = []
+        self.d_loss_record = []
 
         self.loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
@@ -97,8 +99,10 @@ class DNN(ABC):
                                np.mean(self.d_loss_record),
                                iteration)
                 self.d_loss_record = []
-                self.g_loss_record = []
+                self.loss_record = []
 
+            self.loss_record.append(loss_generator)
+            self.d_loss_record.append(loss_discriminator)
 
     @abstractmethod
     def train_epoch(self):
@@ -107,6 +111,7 @@ class DNN(ABC):
             loop over all data samples / number of batches
             train per batch to complete an epoch
         """
+
     @abstractmethod
     def build_model(self):
         """
@@ -119,7 +124,7 @@ class DNN(ABC):
         """
 
     @abstractmethod
-    def train_epoch(self):
+    def train_epoch(self, batch_log: bool = 0):
         """
             iterate over batches
         """

@@ -1,13 +1,14 @@
 """
     author: SPDKH
 """
-import datetime
-import os
+
 from src.data.data import Data
-from src.utils import const
 
 
 class FixedCell(Data):
+    """
+        FixedCell 3D_SIM Data from Opstad
+    """
     def __init__(self, args):
         Data.__init__(self, args)
 

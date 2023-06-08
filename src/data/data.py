@@ -5,7 +5,6 @@
 """
 from abc import ABC, abstractmethod
 import os
-import datetime
 
 import numpy as np
 import tifffile as tiff
@@ -16,7 +15,6 @@ from src.utils.physics_informed.psf_generator import Parameters3D, cal_psf_3d, p
 
 from src.utils import const
 from src.utils import norm_helper
-from src.utils.path_helper import check_folder
 
 
 class Data(ABC):
@@ -200,7 +198,6 @@ class Data(ABC):
         """
             Load PSF
         """
-        pass
 
     def init_psf(self):
         """

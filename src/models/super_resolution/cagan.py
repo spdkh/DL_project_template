@@ -17,6 +17,7 @@ from src.models.gan import GAN
 from src.utils.architectures.binary_classification import discriminator
 from src.utils.architectures.super_resolution import rcan
 from src.utils.ml_helper import AutoClipper
+from src.utils import const
 
 
 class CAGAN(GAN):
@@ -179,14 +180,14 @@ class CAGAN(GAN):
                                  to_file='Disc2.png')  # write to disk
         return disc, frozen_disc
 
-    def generator(self, model_input):
+    def generator(self):
         """
             generator architecture
 
             params:
                 model_input: tf Input object
         """
-        self.model_output = rcan(model_input,
+        self.model_output = rcan(self.model_input,
                                  n_rcab=self.args.n_rcab,
                                  n_res_group=self.args.n_ResGroup,
                                  channel=self.args.n_channel)
